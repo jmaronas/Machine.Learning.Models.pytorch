@@ -36,3 +36,4 @@ Clean up and refactorize code for:
 * [ ] Probabilistic data augmentation using MCMC
 * [ ] Probabilistic data augmentation with Mean Field VI (aka VAE)
 * [ ] Probabilistic data augmentation with flows.
+* [ ] Add regression example to the Bayesian NN models. The ones comparing MFVI and HMC
