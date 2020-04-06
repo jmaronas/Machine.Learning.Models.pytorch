@@ -9,8 +9,8 @@ source $deactivate
 
 cd ~
 git clone https://github.com/jmaronas/pytorch_library.git
-cd pytorch_library
-git checkout b71b16c79a945064793fa53bf7b05f3f6760dbb2
+#cd pytorch_library
+#git checkout b71b16c79a945064793fa53bf7b05f3f6760dbb2
 
 
 
