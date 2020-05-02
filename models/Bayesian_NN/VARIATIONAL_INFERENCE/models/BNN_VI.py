@@ -26,8 +26,8 @@ class FC_VI(nn.Module):
 		self.b_logvar=nn.Parameter(torch.randn((outdim)))
 
 		## Utils
-		self.sampler_w=torch.zeros((indim,outdim))
-		self.sampler_b=torch.zeros((outdim,))
+		self.sampler_w=torch.zeros((indim,outdim)).to(device)
+		self.sampler_b=torch.zeros((outdim,)).to(device)
 
 		# Monitor Mode Collapse
 		self.eps_mean_upper=prior_mean+0.01
@@ -71,7 +71,7 @@ class BNN_VI(nn.Module):
 		# prior N(w,b| )
 		self.prior_mean=torch.tensor(prior_mean).to(device)
 		self.prior_logvar=torch.log(torch.tensor(prior_var).to(device))
-	
+
 		# Loss utils
 		self.N = dataset_size
 
@@ -105,7 +105,7 @@ class BNN_VI(nn.Module):
 
 	# Gaussian KLD
 	def GAUSS_KLD(self,qmean,qlogvar,pmean,plogvar):
-		# Computes the DKL(q(x)//p(x)) between the variational and the prior 
+		# Computes the DKL(q(x)//p(x)) between the variational and the prior
 		# distribution assuming Gaussians distribution with arbitrary prior
 		qvar,pvar = torch.exp(qlogvar),torch.exp(plogvar)
 		DKL=(0.5 * (-1 + plogvar - qlogvar + (qvar/pvar) + torch.pow(pmean-qmean,2)/pvar)).sum()
@@ -127,29 +127,29 @@ class BNN_VI(nn.Module):
 		NLLH = 0.0 #torch.zeros((MB,)).to(device)
 
 		# Negative Log Likelihood
-		for mc in range(MC_samples): #stochastic likelihood estimator			
+		for mc in range(MC_samples): #stochastic likelihood estimator
 			# Reduction = None. We will perform the reduction to propely
 			# scale the two terms in the ELBO
 			NLLH+= self.ce(self.forward(x),t, reduction = 'none')
 
 		NLLH /= float(MC_samples)
 		NLLH =  NLLH.sum()
-		NLLH *= float(self.N)/float(MB) # re-scale by minibatch size	
+		NLLH *= float(self.N)/float(MB) # re-scale by minibatch size
 
 		# Possitive KLD
-		DKL=self.KLD() 
+		DKL=self.KLD()
 
 		# -ELBO = -log p(t|x) + DKL
 		ELBO = NLLH + DKL
 		return ELBO,NLLH,DKL
 
-	# Train function 
+	# Train function
 	def train(self,x,t,scheduler,epochs,lr,warm_up, MC_samples):
 
 		optimizer=torch.optim.Adam(self.parameters(),lr=lr)
 		# Adam goes better for this kind of models than SGD, eventhough is not
 		# a correct optimizer, see https://openreview.net/pdf?id=ryQu7f-RZ .
-		# However It always works fine for models based on 
+		# However It always works fine for models based on
 		# reparametrization trick.
 
 		for e in range(epochs):
@@ -178,4 +178,3 @@ class BNN_VI(nn.Module):
 				prediction+=self.softmax(self.forward(x),dim=1)
 
 			return prediction/float(samples)
-
