@@ -34,6 +34,9 @@ class FC_VI_LR(nn.Module):
 		self.eps_logvar_upper=prior_logvar+0.01
 		self.eps_logvar_lower=prior_logvar-0.01
 
+		self.prior_mean=prior_mean
+		self.prior_logvar = prior_logvar
+
 	def __resample__(self,batch):
 		# This function reshapes the sampler in case the batch dimension changes
 		self.sampler=torch.zeros((batch,self.outdim)).to(device)
@@ -59,6 +62,21 @@ class FC_VI_LR(nn.Module):
 		# Check If the parameters has collapsed to the prior
 		w=((self.w_mean<=self.eps_mean_upper) & (self.w_mean>=self.eps_mean_lower) & (self.w_logvar<=self.eps_logvar_upper) & (self.w_logvar>=self.eps_logvar_lower)).float().sum()
 		b=((self.b_mean<=self.eps_mean_upper) & (self.b_mean>=self.eps_mean_lower) & (self.b_logvar<=self.eps_logvar_upper) & (self.b_logvar>=self.eps_logvar_lower)).float().sum()
+
+		return w+b
+
+	def get_KLcollapsed_posterior(self):
+        # Check If the parameters has collapsed to the prior
+		w_kl = 0.5 * (torch.exp(self.w_logvar - self.prior_logvar)
+                      + (self.w_mean - self.prior_mean)**2/torch.exp(self.prior_logvar)
+                      - 1 + (self.prior_logvar - self.w_logvar))
+
+		w = (w_kl <= 7.5e-05).sum()
+		b_kl = 0.5 * (torch.exp(self.b_logvar - self.prior_logvar)
+                      + (self.b_mean - self.prior_mean)**2/torch.exp(self.prior_logvar)
+                      - 1 + (self.prior_logvar - self.b_logvar))
+
+		b = (b_kl <= 7.5e-05).sum()
 
 		return w+b
 
@@ -97,11 +115,12 @@ class BNN_VILR(nn.Module):
 	def __get_collapsed_posterior__(self):
 		# get the percentage of collapsed parameters
 		with torch.no_grad():
-			collaps,total_params=[0.0]*2
+			klcollaps,collaps,total_params=[0.0]*3
 			for l in self.Layers:
+				klcollaps+=l.get_KLcollapsed_posterior()
 				collaps+=l.get_collapsed_posterior()
 				total_params+=l.get_total_params()
-			return collaps/float(total_params)*100.
+			return (klcollaps/float(total_params)*100., collaps/float(total_params)*100.)
 
 	# This method is only needed by this model
 	def __resample__(self,batch):
@@ -179,8 +198,8 @@ class BNN_VILR(nn.Module):
 			optimizer.step()
 			optimizer.zero_grad()
 
-			collapsed_posterior_percentage=self.__get_collapsed_posterior__()
-			print("On epoch {} LR {:.3f} ELBO {:.5f} NNL {:.5f} KL {:.5f} COLLAPSED PARAMS {:.3f}%".format(e,lr_,loss.item(),NLLH.item(),KL.item(),collapsed_posterior_percentage.item()))
+			KLcollapsed_posterior_percentage, collapsed_posterior_percentage=self.__get_collapsed_posterior__()
+			print("On epoch {} LR {:.3f} ELBO {:.5f} NNL {:.5f} KL {:.5f} COLLAPSED PARAMS {:.3f}% KLCOLLAPSED PARAMS {:.3f}%".format(e,lr_,loss.item(),NLLH.item(),KL.item(),collapsed_posterior_percentage.item(), KLcollapsed_posterior_percentage.item()))
 
 
 	# Compute the predictive distribution
