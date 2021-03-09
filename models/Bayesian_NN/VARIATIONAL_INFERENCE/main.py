@@ -1,3 +1,6 @@
+## Bayesian Neural Network with Mean Field Variational inference with and without Local Reparameterization
+
+## Author: Juan Maroñas Molano
 # Standard
 import matplotlib.pyplot as plt
 import numpy
@@ -13,8 +16,7 @@ import sys
 sys.path.extend(['../../','../'])
 
 # Custom
-import config
-device = config.device
+import config as cg
 from pytorchlib import compute_calibration_measures
 from models import  BNN_VILR, BNN_VI
 from dataset import toy_dataset, plot_toy_dataset
@@ -47,20 +49,20 @@ Tr,Te = toy_dataset(N)
 X_tr, T_tr  = Tr
 X_te, T_te  = Te
 
-X_tr = X_tr.to(device)
-T_tr = T_tr.to(device)
-X_te = X_te.to(device)
-T_te = T_te.to(device)
+X_tr = X_tr.to(cg.device)
+T_tr = T_tr.to(cg.device)
+X_te = X_te.to(cg.device)
+T_te = T_te.to(cg.device)
 
 #### Config Variables ####
 if visualize:
     plot_toy_dataset(Tr,Te)
 
 if args.Local_rep == 0:
-    net = BNN_VI(neu_layers,num_layers,2,4,args.prior_mean,args.prior_var,dataset_size = N)
+    net = BNN_VI(neu_layers,num_layers,2,4,args.prior_mean,args.prior_var,dataset_size = N, use_batched_computations = 0)
 else:
-    net = BNN_VILR(neu_layers,num_layers,2,4,args.prior_mean,args.prior_var,batch = N, dataset_size = N)
-net.to(device)
+    net = BNN_VILR(neu_layers,num_layers,2,4,args.prior_mean,args.prior_var,batch = N, dataset_size = N, use_batched_computations = 1)
+net.to(cg.device)
 
 #######"TRAIN/INFERENCE" MODEL ######
 
@@ -88,35 +90,27 @@ print("ECE train {} ECE test {}".format(ECEtrain,ECEtest))
 
 # Plot Decision Thresholds learn by the model
 if visualize:
-    # Define the grid where we plot
-    vx=numpy.linspace(-5,4,1000)
-    vy=numpy.linspace(-5,4,1000)
-    data_feat=numpy.zeros((1000000,2),numpy.float32)
 
-    # this can be done much more efficient for sure
-    for x,px in enumerate(vx):
-        for y,py in enumerate(vy):
-            data_feat[x*1000+y]=numpy.array([px,py])
+    net.use_batched_computations = 0 # change otherwise it runs out of memory in my computer (both CPU and GPU)
+
+    # Define the grid where we plot
+    n_p       = 1000
+    vx        = numpy.linspace(-5,4,n_p)
+    vy        = numpy.linspace(-5,4,n_p)
+    mesh      = numpy.array(numpy.meshgrid(vx, vy))
+    data_feat = mesh.T.reshape(-1, 2)
 
     # forward through the model
-    data_feat=torch.from_numpy(data_feat)	
+    data_feat=torch.from_numpy(data_feat).to(cg.dtype).to(cg.device)
     with torch.no_grad():
         logits=net.predictive(data_feat,args.predictive_samples).cpu().detach()
-        max_conf,max_target=torch.max(logits,dim=1)
+        max_conf,max_labl=torch.max(logits,dim=1)
 
+    X,Y=mesh[0],mesh[1]
 
-    conf=numpy.zeros((1000000),numpy.float32)
-    labl=numpy.zeros((1000000),numpy.float32)
-    data_feat=0
-    conf[:]=numpy.nan
-    labl[:]=numpy.nan
-    max_conf,max_target=max_conf,max_target
-    for x,px in enumerate(vx):
-        for y,py in enumerate(vy):
-            conf[x*1000+y]=max_conf[x*1000+y]
-            labl[x*1000+y]=max_target[x*1000+y]
-    
-    X,Y=numpy.meshgrid(vx,vy)
+    max_conf = max_conf.reshape(n_p,n_p).T
+    max_labl = max_labl.reshape(n_p,n_p).T
+    aux      = numpy.zeros((n_p,n_p),numpy.float32)
 
     cmap = [plt.cm.get_cmap("Reds"),plt.cm.get_cmap("Greens"),plt.cm.get_cmap("Blues"),plt.cm.get_cmap("Greys")]
 
@@ -132,16 +126,17 @@ if visualize:
         xtr = X_tr[idx_tr,:]
         xte = X_te[idx_te,:]
         
-        aux=numpy.zeros((1000000),numpy.float32)
+        ## Plot training and test samples 
         x1,x2=xtr[:,0].cpu().numpy(),xtr[:,1].cpu().numpy()
+        ax.plot(x1,x2,marker,color=cte,markersize=20,alpha=0.5)
 
-        plt.plot(x1,x2,marker,color=cte,markersize=20,alpha=0.5)
+        ## Plot the winning decision threshold 
+        idx_row, idx_cols     = numpy.where(max_labl==i)
+        aux[idx_row,idx_cols] = max_conf[idx_row,idx_cols]
 
-        index=numpy.where(labl==i)[0]
-        aux[index]=conf[index]
-        index_neg=numpy.where(labl!=i)[0]
-        aux[index_neg]=numpy.nan
-        aux=aux.reshape(1000,1000,order='F')
+        idx_row, idx_cols      = numpy.where(max_labl!=i)
+        aux[idx_row, idx_cols] = numpy.nan
+
         dib=ax.contourf(X,Y,aux,cmap=c,alpha=0.5,levels=[0,0.25,0.3,0.4,0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.92,0.94,0.96,0.98,1.0])
 
         if i==3:
