@@ -91,14 +91,14 @@ if visualize:
 
     # this can be done much more efficient for sure
     for x,px in enumerate(vx):
-            for y,py in enumerate(vy):
-                    data_feat[x*1000+y]=numpy.array([px,py])
+        for y,py in enumerate(vy):
+            data_feat[x*1000+y]=numpy.array([px,py])
 
     # forward through the model
     data_feat=torch.from_numpy(data_feat)	
     with torch.no_grad():
-            logits=net.predictive(data_feat,args.predictive_samples)
-            max_conf,max_target=torch.max(logits,dim=1)
+        logits=net.predictive(data_feat,args.predictive_samples)
+        max_conf,max_target=torch.max(logits,dim=1)
 
 
     conf=numpy.zeros((1000000),numpy.float32)
@@ -108,9 +108,9 @@ if visualize:
     labl[:]=numpy.nan
     max_conf,max_target=max_conf.detach(),max_target.detach()
     for x,px in enumerate(vx):
-            for y,py in enumerate(vy):
-                    conf[x*1000+y]=max_conf[x*1000+y]
-                    labl[x*1000+y]=max_target[x*1000+y]
+        for y,py in enumerate(vy):
+            conf[x*1000+y]=max_conf[x*1000+y]
+            labl[x*1000+y]=max_target[x*1000+y]
     
     X,Y=numpy.meshgrid(vx,vy)
 
@@ -141,10 +141,10 @@ if visualize:
         dib=ax.contourf(X,Y,aux,cmap=c,alpha=0.5,levels=[0,0.25,0.3,0.4,0.5,0.6,0.7,0.75,0.8,0.85,0.9,0.92,0.94,0.96,0.98,1.0])
 
         if i==3:
-                plt.xlabel('x1',fontsize=70)
-                plt.ylabel('x2',fontsize=70)
-                plt.xticks([-5,-4,-3,-2,-1,0,1,2,3,4], fontsize = 60) 
-                plt.yticks([-5,-4,-3,-2,-1,0,1,2,3,4], fontsize = 60) 
-                
+            plt.xlabel('x1',fontsize=70)
+            plt.ylabel('x2',fontsize=70)
+            plt.xticks([-5,-4,-3,-2,-1,0,1,2,3,4], fontsize = 60) 
+            plt.yticks([-5,-4,-3,-2,-1,0,1,2,3,4], fontsize = 60) 
+            
                     
 plt.show()	
