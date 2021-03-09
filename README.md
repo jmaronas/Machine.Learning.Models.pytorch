@@ -24,14 +24,12 @@ In folder models you can find different models, follow instructions there:
 
   * Mean Field Gaussian Variational BNN with local reparameterization [ref](https://arxiv.org/abs/1506.02557)   
 
-
-
 # Todo
 
 Clean up and refactorize code for:
 
+* [ ] Add GP and TGP
 * [ ] Stochastic gradient MCMC ( Hamiltonian Monte Carlo )  BNN [ref](https://arxiv.org/abs/1206.1901), for classification
-
 * [ ] Point Estimate NN (should not go here but useful for comparison), for classification
 * [ ] Probabilistic data augmentation using MCMC
 * [ ] Probabilistic data augmentation with Mean Field VI (aka VAE)
