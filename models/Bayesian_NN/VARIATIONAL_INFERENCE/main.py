@@ -47,6 +47,10 @@ Tr,Te = toy_dataset(N)
 X_tr, T_tr  = Tr
 X_te, T_te  = Te
 
+X_tr = X_tr.to(device)
+T_tr = T_tr.to(device)
+X_te = X_te.to(device)
+T_te = T_te.to(device)
 
 #### Config Variables ####
 if visualize:
@@ -97,7 +101,7 @@ if visualize:
     # forward through the model
     data_feat=torch.from_numpy(data_feat)	
     with torch.no_grad():
-        logits=net.predictive(data_feat,args.predictive_samples)
+        logits=net.predictive(data_feat,args.predictive_samples).cpu().detach()
         max_conf,max_target=torch.max(logits,dim=1)
 
 
@@ -106,7 +110,7 @@ if visualize:
     data_feat=0
     conf[:]=numpy.nan
     labl[:]=numpy.nan
-    max_conf,max_target=max_conf.detach(),max_target.detach()
+    max_conf,max_target=max_conf,max_target
     for x,px in enumerate(vx):
         for y,py in enumerate(vy):
             conf[x*1000+y]=max_conf[x*1000+y]
@@ -129,7 +133,7 @@ if visualize:
         xte = X_te[idx_te,:]
         
         aux=numpy.zeros((1000000),numpy.float32)
-        x1,x2=xtr[:,0].numpy(),xtr[:,1].numpy()
+        x1,x2=xtr[:,0].cpu().numpy(),xtr[:,1].cpu().numpy()
 
         plt.plot(x1,x2,marker,color=cte,markersize=20,alpha=0.5)
 
@@ -148,3 +152,4 @@ if visualize:
             
                     
 plt.show()	
+

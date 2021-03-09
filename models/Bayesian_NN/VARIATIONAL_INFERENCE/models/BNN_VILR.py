@@ -14,7 +14,7 @@ device = config.device
 class FC_VI_LR(nn.Module):
 	def __init__(self,indim,outdim,batch,activation,prior_mean,prior_logvar):
 		super(FC_VI_LR, self).__init__()
-		## Model Definitinion 
+		## Model Definitinion
 		# -> Prior: p(w,b)=Normal(0,1)
 		self.activation=nn.functional.relu if activation=='relu' else None
 		self.outdim=outdim
@@ -25,8 +25,8 @@ class FC_VI_LR(nn.Module):
 		self.b_mean=nn.Parameter(torch.randn((outdim)))
 		self.b_logvar=nn.Parameter(torch.randn((outdim)))
 
-		# Utils 
-		self.sampler=torch.zeros((batch,outdim))
+		# Utils
+		self.sampler=torch.zeros((batch,outdim)).to(device)
 
 		# Monitor Model Collapse
 		self.eps_mean_upper=prior_mean+0.01
@@ -34,9 +34,12 @@ class FC_VI_LR(nn.Module):
 		self.eps_logvar_upper=prior_logvar+0.01
 		self.eps_logvar_lower=prior_logvar-0.01
 
+		self.prior_mean=prior_mean
+		self.prior_logvar = prior_logvar
+
 	def __resample__(self,batch):
 		# This function reshapes the sampler in case the batch dimension changes
-		self.sampler=torch.zeros((batch,self.outdim))
+		self.sampler=torch.zeros((batch,self.outdim)).to(device)
 
 	def sample(self,ind_mu,ind_var):
 		# Reparameterization trick ( locally )
@@ -45,12 +48,12 @@ class FC_VI_LR(nn.Module):
 
 	def forward(self,x):
 		# Induce distribution over activations
-		ind_mu = torch.mm(x,self.w_mean) + self.b_mean	
+		ind_mu = torch.mm(x,self.w_mean) + self.b_mean
 		ind_var = torch.mm(x**2,torch.exp(self.w_logvar)) + torch.exp(self.b_logvar)
 		# Sample the the batch of activations
 		s=self.sample(ind_mu,ind_var)
 		return self.activation(s) if self.activation != None else s
-			
+
 	def get_total_params(self):
 		# Return total number of parameters
 		return self.w_mean.numel()*2+self.b_mean.numel()*2
@@ -59,6 +62,21 @@ class FC_VI_LR(nn.Module):
 		# Check If the parameters has collapsed to the prior
 		w=((self.w_mean<=self.eps_mean_upper) & (self.w_mean>=self.eps_mean_lower) & (self.w_logvar<=self.eps_logvar_upper) & (self.w_logvar>=self.eps_logvar_lower)).float().sum()
 		b=((self.b_mean<=self.eps_mean_upper) & (self.b_mean>=self.eps_mean_lower) & (self.b_logvar<=self.eps_logvar_upper) & (self.b_logvar>=self.eps_logvar_lower)).float().sum()
+
+		return w+b
+
+	def get_KLcollapsed_posterior(self):
+        # Check If the parameters has collapsed to the prior
+		w_kl = 0.5 * (torch.exp(self.w_logvar - self.prior_logvar)
+                      + (self.w_mean - self.prior_mean)**2/torch.exp(self.prior_logvar)
+                      - 1 + (self.prior_logvar - self.w_logvar))
+
+		w = (w_kl <= 7.5e-05).sum()
+		b_kl = 0.5 * (torch.exp(self.b_logvar - self.prior_logvar)
+                      + (self.b_mean - self.prior_mean)**2/torch.exp(self.prior_logvar)
+                      - 1 + (self.prior_logvar - self.b_logvar))
+
+		b = (b_kl <= 7.5e-05).sum()
 
 		return w+b
 
@@ -81,7 +99,7 @@ class BNN_VILR(nn.Module):
 		# Loss utils
 		self.N = dataset_size
 
-		# Instance model Likelihood 
+		# Instance model Likelihood
 		self.Layers = nn.ModuleList()
 		if number_layers == 0:
 			Lin=FC_VI_LR(in_dim,out_dim,batch,'linear',self.prior_mean,self.prior_logvar)
@@ -97,11 +115,12 @@ class BNN_VILR(nn.Module):
 	def __get_collapsed_posterior__(self):
 		# get the percentage of collapsed parameters
 		with torch.no_grad():
-			collaps,total_params=[0.0]*2
+			klcollaps,collaps,total_params=[0.0]*3
 			for l in self.Layers:
+				klcollaps+=l.get_KLcollapsed_posterior()
 				collaps+=l.get_collapsed_posterior()
 				total_params+=l.get_total_params()
-			return collaps/float(total_params)*100.
+			return (klcollaps/float(total_params)*100., collaps/float(total_params)*100.)
 
 	# This method is only needed by this model
 	def __resample__(self,batch):
@@ -116,7 +135,7 @@ class BNN_VILR(nn.Module):
 
 	# Gaussian KLD
 	def GAUSS_KLD(self,qmean,qlogvar,pmean,plogvar):
-		# Computes the DKL(q(x)//p(x)) between the variational and the prior 
+		# Computes the DKL(q(x)//p(x)) between the variational and the prior
 		# distribution assuming Gaussians distribution with arbitrary prior
 		qvar,pvar = torch.exp(qlogvar),torch.exp(plogvar)
 		DKL=(0.5 * (-1 + plogvar - qlogvar + (qvar/pvar) + torch.pow(pmean-qmean,2)/pvar)).sum()
@@ -140,7 +159,7 @@ class BNN_VILR(nn.Module):
 		NLLH = 0.0 #torch.zeros((MB,)).to(device)
 
 		# Negative Log Likelihood
-		for mc in range(MC_samples): #stochastic likelihood estimator			
+		for mc in range(MC_samples): #stochastic likelihood estimator
 			# Reduction = None. We will perform the reduction to propely
 			# scale the two terms in the ELBO
 			NLLH+= self.ce(self.forward(x),t, reduction = 'none')
@@ -150,19 +169,19 @@ class BNN_VILR(nn.Module):
 		NLLH *= float(self.N)/float(MB) # re-scale by minibatch size
 
 		# Possitive KLD
-		DKL=self.KLD() 
+		DKL=self.KLD()
 
 		# -ELBO = -log p(t|x) + DKL
 		ELBO = NLLH + DKL
 		return ELBO,NLLH,DKL
 
-	# Train function 
+	# Train function
 	def train(self,x,t,scheduler,epochs,lr,warm_up, MC_samples):
 
 		optimizer=torch.optim.Adam(self.parameters(),lr=lr)
 		# Adam goes better for this kind of models than SGD, eventhough is not
 		# a correct optimizer, see https://openreview.net/pdf?id=ryQu7f-RZ .
-		# However It always works fine for models based on 
+		# However It always works fine for models based on
 		# reparametrization trick.
 
 		for e in range(epochs):
@@ -179,9 +198,9 @@ class BNN_VILR(nn.Module):
 			optimizer.step()
 			optimizer.zero_grad()
 
-			collapsed_posterior_percentage=self.__get_collapsed_posterior__()
-			print("On epoch {} LR {:.3f} ELBO {:.5f} NNL {:.5f} KL {:.5f} COLLAPSED PARAMS {:.3f}%".format(e,lr_,loss.item(),NLLH.item(),KL.item(),collapsed_posterior_percentage.item()))
-				
+			KLcollapsed_posterior_percentage, collapsed_posterior_percentage=self.__get_collapsed_posterior__()
+			print("On epoch {} LR {:.3f} ELBO {:.5f} NNL {:.5f} KL {:.5f} COLLAPSED PARAMS {:.3f}% KLCOLLAPSED PARAMS {:.3f}%".format(e,lr_,loss.item(),NLLH.item(),KL.item(),collapsed_posterior_percentage.item(), KLcollapsed_posterior_percentage.item()))
+
 
 	# Compute the predictive distribution
 	def predictive(self,x,samples):
@@ -196,4 +215,3 @@ class BNN_VILR(nn.Module):
 				prediction+=self.softmax(self.forward(x),dim=1)
 
 			return prediction/float(samples)
-
