@@ -43,9 +43,10 @@ predictive_samples=args.predictive_samples
 visualize = args.plot
 
 #### LOAD DATA ####
-N = 400 # number of training samples
-MB = N # minibatch. In this case is the same as I am not implementing a dataset interface.
-Tr,Te = toy_dataset(N)
+N_tr = 400 # number of training samples
+N_te = 200 # number of test samples
+MB = N_tr # minibatch. In this case is the same as I am not implementing a dataset interface.
+Tr,Te = toy_dataset(N_tr = N_tr , N_te = N_te)
 X_tr, T_tr  = Tr
 X_te, T_te  = Te
 
@@ -59,21 +60,22 @@ if visualize:
     plot_toy_dataset(Tr,Te)
 
 if args.Local_rep == 0:
-    net = BNN_VI(neu_layers,num_layers,2,4,args.prior_mean,args.prior_var,dataset_size = N, use_batched_computations = 0)
+    net = BNN_VI(neu_layers,num_layers,2,4,args.prior_mean,args.prior_var,dataset_size = N_tr, use_batched_computations = 0)
 else:
-    net = BNN_VILR(neu_layers,num_layers,2,4,args.prior_mean,args.prior_var,batch = N, dataset_size = N, use_batched_computations = 1)
+    net = BNN_VILR(neu_layers,num_layers,2,4,args.prior_mean,args.prior_var, batch = MB, dataset_size = N_tr, use_batched_computations = 1)
 net.to(cg.device)
 
 #######"TRAIN/INFERENCE" MODEL ######
 
 def scheduler(lr,eps):
-    if eps<-1100:
-            lr=lr/10.
+    if eps > 500:
+        lr = lr/10.
+
     return lr
 
 # Train the model
 with torch.autograd.set_detect_anomaly(True):
-    net.train(X_tr,T_tr,scheduler=scheduler,epochs=args.epochs,lr=0.1,warm_up=10, MC_samples = 10)
+    net.train(X_tr,T_tr,scheduler=scheduler,epochs=args.epochs, lr = 0.1, warm_up = 10, MC_samples = 10)
 
 # Inference in the model
 prediction_train=net.predictive(X_tr,predictive_samples)
@@ -85,8 +87,8 @@ ECEtest,_,_,_=compute_calibration_measures(prediction_test,T_te,apply_softmax=Fa
 ACCtrain=(float((prediction_train.argmax(1)==T_tr).sum())*100.)/float(T_tr.size(0))
 ACCtest=(float((prediction_test.argmax(1)==T_te).sum())*100.)/float(T_te.size(0))
 
-print("MAP net \t train acc {} \t test acc {}".format(ACCtrain,ACCtest))
-print("ECE train {} ECE test {}".format(ECEtrain,ECEtest))
+print("VI BNN net \t train acc {:.3f} \t test acc {:.3f}".format(ACCtrain,ACCtest))
+print("ECE train {:.3f} ECE test {:.3f}".format(ECEtrain,ECEtest))
 
 # Plot Decision Thresholds learn by the model
 if visualize:
@@ -103,7 +105,7 @@ if visualize:
     # forward through the model
     data_feat=torch.from_numpy(data_feat).to(cg.dtype).to(cg.device)
     with torch.no_grad():
-        logits=net.predictive(data_feat,args.predictive_samples).cpu().detach()
+        logits=net.predictive(data_feat,args.predictive_samples, use_same_samples = True).cpu().detach()
         max_conf,max_labl=torch.max(logits,dim=1)
 
     X,Y=mesh[0],mesh[1]
@@ -114,21 +116,32 @@ if visualize:
 
     cmap = [plt.cm.get_cmap("Reds"),plt.cm.get_cmap("Greens"),plt.cm.get_cmap("Blues"),plt.cm.get_cmap("Greys")]
 
-    color_list_tr=['*r','*g','*b','*k']
-    color_list_te=['orange','lightgreen','cyan','gray']
-    markers=['d','*','P','v']
+    color_list_tr=['r','g','b','k']
+    color_list_te=['r','g','b','k']
+
+    markers    = ['*','*','*','*']
+    markers_te = ['o','o','o','o']
+
     fig,ax = plt.subplots(figsize=(25,35))
 
-    for ctr,cte,i,c,marker in zip(color_list_tr,color_list_te,range(4),cmap,markers):
+    for ctr,cte,i,c,marker, marker_te in zip(color_list_tr,color_list_te,range(4),cmap,markers, markers_te):
 
         idx_tr = T_tr == i
         idx_te = T_te == i
         xtr = X_tr[idx_tr,:]
         xte = X_te[idx_te,:]
+
+        ## Plot training and test samples 
+        x1,x2 = xtr[:,0].cpu().numpy(),xtr[:,1].cpu().numpy()
+        ax.plot( x1, x2, marker, color=ctr, markersize = 5, alpha = 1.0)
+
+        x1,x2 = xte[:,0].cpu().numpy(),xte[:,1].cpu().numpy()
+        ax.plot(x1, x2, marker_te, color=cte, markersize = 5, alpha = 1.0)
+
         
         ## Plot training and test samples 
         x1,x2=xtr[:,0].cpu().numpy(),xtr[:,1].cpu().numpy()
-        ax.plot(x1,x2,marker,color=cte,markersize=20,alpha=0.5)
+        ax.plot(x1,x2,marker, color = cte, markersize = 5, alpha = 1.0)
 
         ## Plot the winning decision threshold 
         idx_row, idx_cols     = numpy.where(max_labl==i)

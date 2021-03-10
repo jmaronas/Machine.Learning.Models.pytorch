@@ -47,6 +47,23 @@ class FC_VI_LR(nn.Module):
         s=self.sample(ind_mu,ind_var)
         return self.activation(s) if self.activation != None else s
 
+    def forward_without_LR(self,x):
+
+        assert len(x.shape) == 2, "This function does not work batched, need to implement"
+
+        w_m = self.w_mean
+        w_v = torch.exp(self.w_logvar)
+
+        b_m = self.b_mean
+        b_v = torch.exp(self.b_logvar)
+
+        w  = self.sample(w_m,w_v)
+        b  = self.sample(b_m,b_v)
+
+        s  = torch.mm(x,w) + b
+
+        return self.activation(s) if self.activation != None else s
+
     def get_total_params(self):
         # Return total number of parameters
         return self.w_mean.numel()*2+self.b_mean.numel()*2
@@ -118,9 +135,13 @@ class BNN_VILR(nn.Module):
             return (klcollaps/float(total_params)*100., collaps/float(total_params)*100.)
 
     # Compute the likelihood p(t|x)
-    def forward(self,x):
-        for l in self.Layers:
-            x=l(x)
+    def forward(self,x, with_LR = True):
+        if with_LR:
+            for l in self.Layers:
+                x = l(x)
+        else:
+            for l in self.Layers:
+                x = l.forward_without_LR(x)
         return x
 
     # Gaussian KLD
@@ -192,7 +213,9 @@ class BNN_VILR(nn.Module):
         for e in range(epochs):
             # optimizer
             lr_=scheduler(lr,e)
-            optimizer=torch.optim.Adam(self.parameters(),lr=lr_)
+
+            for idx in range(len(optimizer.param_groups)):
+                optimizer.param_groups[idx]['lr'] = lr_
 
             loss,NLLH,KL=self.ELBO(x,t,MC_samples)
             # warm up (see https://arxiv.org/abs/1602.02282)
@@ -208,21 +231,22 @@ class BNN_VILR(nn.Module):
 
 
     # Compute the predictive distribution
-    def predictive(self,x,samples):
+    def predictive(self,x,samples, use_same_samples = False):
         # Compute predictive distribution
         # We use a different w per test sample for the montecarlo integrator.
         # It does not matter. Normally I perform inference in a different way
-        # when using local rep, however for simplicity I let this like this
+        # by using the same set of parameters for all the test samples. To allow that
+        # set use_same_samples = True
         with torch.no_grad():
 
             if self.use_batched_computations:
                 x          = x.unsqueeze(dim = 0).repeat(samples,1,1)
-                prediction = self.softmax(self.forward(x),dim=2)
+                prediction = self.softmax(self.forward(x, with_LR = not use_same_samples),dim=2)
                 return prediction.mean(0)
 
             else:
                 prediction=0.0
                 for s in range(samples):
-                    prediction+=self.softmax(self.forward(x),dim=1)
+                    prediction+=self.softmax(self.forward(x, with_LR = not use_same_samples),dim=1)
 
                 return prediction/float(samples)

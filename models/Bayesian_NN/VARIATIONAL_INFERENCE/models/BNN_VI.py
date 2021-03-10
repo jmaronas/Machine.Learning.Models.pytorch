@@ -182,7 +182,9 @@ class BNN_VI(nn.Module):
         for e in range(epochs):
             # optimizer
             lr_=scheduler(lr,e)
-            optimizer=torch.optim.Adam(self.parameters(),lr=lr_)
+
+            for idx in range(len(optimizer.param_groups)):
+                optimizer.param_groups[idx]['lr'] = lr_
 
             loss,NLLH,KL=self.ELBO(x,t,MC_samples)
             # warm up (see https://arxiv.org/abs/1602.02282)
