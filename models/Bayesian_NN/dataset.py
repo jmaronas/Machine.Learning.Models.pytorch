@@ -12,30 +12,32 @@ import matplotlib.pyplot as plt
 ###########################
 ####### TOY DATASET #######
 
-def toy_dataset( N: int ) -> list:
+def toy_dataset( N_tr: int, N_te : int ) -> list:
     ''' Toy Dataset 
             Args:
                     N  (int) :->: Number of Samples. If it is not divisible by 4, it will be rounded to be
     '''
     reset_seed(1)
 
+    per_class = int(N_te/4.)
+
     ''' test set '''
-    x1=torch.randn(20,2)*1+0.5
-    x2=torch.randn(20,2)*0.5+torch.from_numpy(numpy.array([0.5,-2])).float()
-    x3=torch.randn(20,2)*0.3-0.5
-    x4=torch.randn(20,2)*0.8+torch.from_numpy(numpy.array([-1.0,-2])).float()
+    x1=torch.randn(per_class,2)*1+0.5
+    x2=torch.randn(per_class,2)*0.5+torch.from_numpy(numpy.array([0.5,-2])).float()
+    x3=torch.randn(per_class,2)*0.3-0.5
+    x4=torch.randn(per_class,2)*0.8+torch.from_numpy(numpy.array([-1.0,-2])).float()
 
-    t1=torch.zeros(20,)
-    t2=torch.ones(20,)
-    t3=torch.ones(20,)+1
-    t4=torch.ones(20,)+2
+    t1=torch.zeros(per_class,)
+    t2=torch.ones(per_class,)
+    t3=torch.ones(per_class,)+1
+    t4=torch.ones(per_class,)+2
 
-    idx=numpy.random.permutation(80)
+    idx=numpy.random.permutation(per_class*4)
     x_test=torch.cat((x1,x2,x3,x4))[idx].float()
     t_test=torch.cat((t1,t2,t3,t4))[idx].long()
 
     ''' train set '''
-    per_class = int(N/4.)
+    per_class = int(N_tr/4.)
     
     #sample samples per class
     x1=torch.randn(per_class,2)*1.0+0.5

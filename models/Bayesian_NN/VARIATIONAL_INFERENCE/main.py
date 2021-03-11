@@ -43,8 +43,8 @@ predictive_samples=args.predictive_samples
 visualize = args.plot
 
 #### LOAD DATA ####
-N_tr = 400 # number of training samples
-N_te = 200 # number of test samples
+N_tr = 4000 # number of training samples
+N_te = 200  # number of test samples
 MB = N_tr # minibatch. In this case is the same as I am not implementing a dataset interface.
 Tr,Te = toy_dataset(N_tr = N_tr , N_te = N_te)
 X_tr, T_tr  = Tr

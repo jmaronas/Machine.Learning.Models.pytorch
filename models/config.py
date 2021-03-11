@@ -21,6 +21,7 @@ def check_torch(torch_version):
 
 def reset_seed(seed: int) -> None: 
     torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
     numpy.random.seed(seed)
 
 ## Config Variables
