@@ -38,4 +38,7 @@ pi = torch.tensor(math.pi).to(device)
 ## Callers
 check_torch(torch_version)
 
-
+## Computation constants
+quad_points     = 50 # number of quadrature points used in integrations
+constant_jitter = None # if provided, then this jitter value is added always when computing cholesky factors
+global_jitter   = None # if None, then it uses 1e-8 with float 64 and 1-6 with float 32 precission when a cholesky error occurs

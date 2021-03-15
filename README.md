@@ -18,20 +18,42 @@ Author: Juan Maroñas Molano (jmaronasm@gmail.com) [PRHLT Research Center, Unive
 
 In folder models you can find different models, follow instructions there:
 
-* models/Bayesian_NN/
+* models/Gaussian_Processes/ (regression and classification)
+
+  * SVGP_TPG:
+    *  stochastic sparse Variational GP    [ref](https://arxiv.org/abs/1309.6835) [ref](http://proceedings.mlr.press/v38/hensman15.pdf) 
+    *  Transformed GP [ref](https://arxiv.org/abs/2011.01596)
+
+* models/Bayesian_NN/ (only classification)
 
   * Mean Field Gaussian Variational BNN with pathwise gradient computations [ref](https://arxiv.org/abs/1505.05424)
 
   * Mean Field Gaussian Variational BNN with local reparameterization [ref](https://arxiv.org/abs/1506.02557)   
+    
+  * Inference in Bayesian Neural Network with Hamiltonian Monte Carlo [ref](https://arxiv.org/pdf/1206.1901.pdf)
+
+  * Point estimate Neural Network (Maximum Likelihood and Maximum Posterior)
+
+    
+
+  
 
 # Todo
 
-Clean up and refactorize code for:
-
-* [ ] Add GP and TGP
-* [ ] Stochastic gradient MCMC ( Hamiltonian Monte Carlo )  BNN [ref](https://arxiv.org/abs/1206.1901), for classification
-* [ ] Point Estimate NN (should not go here but useful for comparison), for classification
-* [ ] Probabilistic data augmentation using MCMC
-* [ ] Probabilistic data augmentation with Mean Field VI (aka VAE)
-* [ ] Probabilistic data augmentation with flows.
 * [ ] Add regression example to the Bayesian NN models. The ones comparing MFVI and HMC
+* [ ] Stochastic gradient MCMC ( Hamiltonian Monte Carlo )  BNN [ref]()
+
+##### Generative Models
+
+I have a couple of generative models already implemented that perhaps I upload one day (will do when I need them for something, as I need to clean them up a bit):
+
+* [ ] Probabilistic data augmentation using MCMC
+
+* [ ] Probabilistic data augmentation with Mean Field VI (aka VAE)
+
+* [ ] Probabilistic data augmentation with flows.
+
+  
+
+  
+
