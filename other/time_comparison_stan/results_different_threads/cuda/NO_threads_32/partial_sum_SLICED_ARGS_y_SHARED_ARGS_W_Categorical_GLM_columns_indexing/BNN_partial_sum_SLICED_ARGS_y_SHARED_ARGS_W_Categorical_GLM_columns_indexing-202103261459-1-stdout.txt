@@ -1,0 +1,66 @@
+method = sample (Default)
+  sample
+    num_samples = 1
+    num_warmup = 1000 (Default)
+    save_warmup = 1
+    thin = 1 (Default)
+    adapt
+      engaged = 0
+      gamma = 0.050000000000000003 (Default)
+      delta = 0.80000000000000004 (Default)
+      kappa = 0.75 (Default)
+      t0 = 10 (Default)
+      init_buffer = 75 (Default)
+      term_buffer = 50 (Default)
+      window = 25 (Default)
+    algorithm = hmc (Default)
+      hmc
+        engine = nuts (Default)
+          nuts
+            max_depth = 10 (Default)
+        metric = diag_e (Default)
+        metric_file =  (Default)
+        stepsize = 1 (Default)
+        stepsize_jitter = 0 (Default)
+id = 1
+data
+  file = /tmp/tmpyopvi43j/pndedrty.json
+init = 2 (Default)
+random
+  seed = 1
+output
+  file = /home/jmaronasm/STAN_time_comparison/results/cuda/NO_threads_32/partial_sum_SLICED_ARGS_y_SHARED_ARGS_W_Categorical_GLM_columns_indexing/BNN_partial_sum_SLICED_ARGS_y_SHARED_ARGS_W_Categorical_GLM_columns_indexing-202103261459-1.csv
+  diagnostic_file = /home/jmaronasm/STAN_time_comparison/results/cuda/NO_threads_32/partial_sum_SLICED_ARGS_y_SHARED_ARGS_W_Categorical_GLM_columns_indexing/BNN_partial_sum_SLICED_ARGS_y_SHARED_ARGS_W_Categorical_GLM_columns_indexing-202103261459-diagnostic-1.csv
+  refresh = 100 (Default)
+  sig_figs = -1 (Default)
+  profile_file = profile.csv (Default)
+opencl
+  device = -1 (Default)
+  platform = -1 (Default)
+num_threads = 32
+opencl_platform_name = NVIDIA CUDA
+opencl_device_name = GeForce RTX 2080 Ti
+
+
+Gradient evaluation took 0.007199 seconds
+1000 transitions using 10 leapfrog steps per transition would take 71.99 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 1001 [  0%]  (Warmup)
+Iteration:  100 / 1001 [  9%]  (Warmup)
+Iteration:  200 / 1001 [ 19%]  (Warmup)
+Iteration:  300 / 1001 [ 29%]  (Warmup)
+Iteration:  400 / 1001 [ 39%]  (Warmup)
+Iteration:  500 / 1001 [ 49%]  (Warmup)
+Iteration:  600 / 1001 [ 59%]  (Warmup)
+Iteration:  700 / 1001 [ 69%]  (Warmup)
+Iteration:  800 / 1001 [ 79%]  (Warmup)
+Iteration:  900 / 1001 [ 89%]  (Warmup)
+Iteration: 1000 / 1001 [ 99%]  (Warmup)
+Iteration: 1001 / 1001 [100%]  (Sampling)
+
+ Elapsed Time: 5.988 seconds (Warm-up)
+               0.005 seconds (Sampling)
+               5.993 seconds (Total)
+

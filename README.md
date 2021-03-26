@@ -27,16 +27,18 @@ In folder models you can find different models, follow instructions there:
 * models/Bayesian_NN/ (only classification)
 
   * Mean Field Gaussian Variational BNN with pathwise gradient computations [ref](https://arxiv.org/abs/1505.05424)
-
-  * Mean Field Gaussian Variational BNN with local reparameterization [ref](https://arxiv.org/abs/1506.02557)   
-    
-  * Inference in Bayesian Neural Network with Hamiltonian Monte Carlo [ref](https://arxiv.org/pdf/1206.1901.pdf)
-
+* Mean Field Gaussian Variational BNN with local reparameterization [ref](https://arxiv.org/abs/1506.02557)   
+  * Inference in Bayesian Neural Network with Hamiltonian Monte Carlo. Custom implementation in PyTorch [ref](https://arxiv.org/pdf/1206.1901.pdf)
+  * Inference in a hierarchical Bayesian Neural Network using NUTS sampler. Implementation done in STAN
   * Point estimate Neural Network (Maximum Likelihood and Maximum Posterior)
 
-    
 
-  
+## Other Stuff
+
+In this folder I keep other things different to implementations.
+
+* other/time_comparison_stan/
+  * Keeps some time comparisons I have done with a model and the different possible implementations in stan
 
 # Todo
 

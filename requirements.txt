@@ -8,5 +8,6 @@ sklearn==0.24.1
 cmdstanpy
 arviz
 jupyter
+tqdm
 git+git://github.com/jmaronas/pytorch_library.git
 

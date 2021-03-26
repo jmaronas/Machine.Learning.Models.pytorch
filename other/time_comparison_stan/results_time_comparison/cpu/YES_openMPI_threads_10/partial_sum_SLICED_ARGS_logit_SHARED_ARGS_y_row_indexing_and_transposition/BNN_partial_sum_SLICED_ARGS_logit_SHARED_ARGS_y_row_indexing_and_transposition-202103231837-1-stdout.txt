@@ -1,0 +1,54 @@
+method = sample (Default)
+  sample
+    num_samples = 1
+    num_warmup = 1
+    save_warmup = 1
+    thin = 1 (Default)
+    adapt
+      engaged = 1 (Default)
+      gamma = 0.050000000000000003 (Default)
+      delta = 0.80000000000000004 (Default)
+      kappa = 0.75 (Default)
+      t0 = 10 (Default)
+      init_buffer = 75 (Default)
+      term_buffer = 50 (Default)
+      window = 25 (Default)
+    algorithm = hmc (Default)
+      hmc
+        engine = nuts (Default)
+          nuts
+            max_depth = 10 (Default)
+        metric = diag_e (Default)
+        metric_file =  (Default)
+        stepsize = 1 (Default)
+        stepsize_jitter = 0 (Default)
+id = 1
+data
+  file = /tmp/tmpw4avh318/hcg69tub.json
+init = 2 (Default)
+random
+  seed = 1
+output
+  file = /home/jmaronasm/STAN_time_comparison/results/cpu/YES_openMPI_threads_10/partial_sum_SLICED_ARGS_logit_SHARED_ARGS_y_row_indexing_and_transposition/BNN_partial_sum_SLICED_ARGS_logit_SHARED_ARGS_y_row_indexing_and_transposition-202103231837-1.csv
+  diagnostic_file = /home/jmaronasm/STAN_time_comparison/results/cpu/YES_openMPI_threads_10/partial_sum_SLICED_ARGS_logit_SHARED_ARGS_y_row_indexing_and_transposition/BNN_partial_sum_SLICED_ARGS_logit_SHARED_ARGS_y_row_indexing_and_transposition-202103231837-diagnostic-1.csv
+  refresh = 100 (Default)
+  sig_figs = -1 (Default)
+  profile_file = profile.csv (Default)
+mpi_enabled = 1
+
+
+Gradient evaluation took 0.036789 seconds
+1000 transitions using 10 leapfrog steps per transition would take 367.89 seconds.
+Adjust your expectations accordingly!
+
+
+WARNING: No variance estimation is
+         performed for num_warmup < 20
+
+Iteration: 1 / 2 [ 50%]  (Warmup)
+Iteration: 2 / 2 [100%]  (Sampling)
+
+ Elapsed Time: 0.061 seconds (Warm-up)
+               0.041 seconds (Sampling)
+               0.102 seconds (Total)
+
